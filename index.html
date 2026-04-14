@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Income Expense Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+    <div class="max-w-3xl mx-auto p-4">
+        <h1 class="text-2xl font-bold text-center mb-4">Income Expense Calculator</h1>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-white p-4 rounded shadow text-center">
+                <p class="text-gray-500">Income</p>
+                <p class="text-green-600 font-bold text-lg">₹<span id="income">0</span></p>
+            </div>
+            <div class="bg-white p-4 rounded shadow text-center">
+                <p class="text-gray-500">Expense</p>
+                <p class="text-red-600 font-bold text-lg">₹<span id="expense">0</span></p>
+            </div>
+            <div class="bg-white p-4 rounded shadow text-center">
+                <p class="text-gray-500">Balance</p>
+                <p class="font-bold text-lg">₹<span id="balance">0</span></p>
+            </div>
+        </div>
+
+
+        <div class="bg-white p-4 rounded shadow mb-4">
+            <input id="desc" type="text" placeholder="Description" class="w-full border p-2 mb-2 rounded" />
+            <input id="amount" type="number" placeholder="Amount" class="w-full border p-2 mb-2 rounded" />
+            <select id="type" class="w-full border p-2 mb-2 rounded">
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <div class="flex gap-2">
+                <button onclick="addOrUpdate()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Add /
+                    Update</button>
+                <button onclick="resetForm()" class="bg-gray-400 text-white px-4 py-2 rounded w-full">Reset</button>
+            </div>
+        </div>
+
+
+        <div class="mb-4 flex gap-4">
+            <label><input type="radio" name="filter" value="all" checked /> All</label>
+            <label><input type="radio" name="filter" value="income" /> Income</label>
+            <label><input type="radio" name="filter" value="expense" /> Expense</label>
+        </div>
+
+
+        <div id="list" class="bg-white p-4 rounded shadow"></div>
+    </div>
+
+    <script>
+        let data = JSON.parse(localStorage.getItem("data")) || [];
+        let editIndex = null;
+
+        function saveData() {
+            localStorage.setItem("data", JSON.stringify(data));
+        }
+
+        function render() {
+            const list = document.getElementById("list");
+            list.innerHTML = "";
+
+            let filter = document.querySelector('input[name="filter"]:checked').value;
+
+            let income = 0, expense = 0;
+
+            data.forEach((item, index) => {
+                if (filter !== "all" && item.type !== filter) return;
+
+                const div = document.createElement("div");
+                div.className = "flex justify-between items-center border-b py-2";
+
+                div.innerHTML = `
+          <span class="${item.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+            ${item.desc} - ₹${item.amount}
+          </span>
+          <div class="flex gap-2">
+            <button onclick="editItem(${index})" class="bg-yellow-400 px-2 py-1 rounded">Edit</button>
+            <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+          </div>
+        `;
+
+                list.appendChild(div);
+
+                if (item.type === "income") income += Number(item.amount);
+                else expense += Number(item.amount);
+            });
+
+            document.getElementById("income").innerText = income;
+            document.getElementById("expense").innerText = expense;
+            document.getElementById("balance").innerText = income - expense;
+        }
+
+        function addOrUpdate() {
+            const desc = document.getElementById("desc").value;
+            const amount = document.getElementById("amount").value;
+            const type = document.getElementById("type").value;
+
+            if (!desc || !amount) return alert("Please fill all fields");
+
+            if (editIndex !== null) {
+                data[editIndex] = { desc, amount, type };
+                editIndex = null;
+            } else {
+                data.push({ desc, amount, type });
+            }
+
+            saveData();
+            render();
+            resetForm();
+        }
+
+        function editItem(index) {
+            const item = data[index];
+            document.getElementById("desc").value = item.desc;
+            document.getElementById("amount").value = item.amount;
+            document.getElementById("type").value = item.type;
+            editIndex = index;
+        }
+
+        function deleteItem(index) {
+            const confirmDelete = confirm("Are you sure you want to delete this item?");
+            if (!confirmDelete) return;
+
+            data.splice(index, 1);
+            saveData();
+            render();
+        }
+
+        function resetForm() {
+            document.getElementById("desc").value = "";
+            document.getElementById("amount").value = "";
+            editIndex = null;
+        }
+
+        document.querySelectorAll('input[name="filter"]').forEach(r => {
+            r.addEventListener("change", render);
+        });
+
+        render();
+    </script>
+</body>
+
+</html>
