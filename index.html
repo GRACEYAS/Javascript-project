@@ -2,149 +2,375 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Income Expense Calculator</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-100">
-    <div class="max-w-3xl mx-auto p-4">
-        <h1 class="text-2xl font-bold text-center mb-4">Income Expense Calculator</h1>
 
+    <div class="max-w-4xl mx-auto p-4">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div class="bg-white p-4 rounded shadow text-center">
-                <p class="text-gray-500">Income</p>
-                <p class="text-green-600 font-bold text-lg">₹<span id="income">0</span></p>
+        <!-- Heading -->
+        <h1 class="text-3xl font-bold text-center mb-5">
+            Income Expense Calculator
+        </h1>
+
+        <!-- Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+
+            <div class="bg-white p-5 rounded shadow text-center">
+                <p class="text-gray-500">Total Income</p>
+                <h2 class="text-2xl font-bold text-green-600">
+                    ₹<span id="income">0</span>
+                </h2>
             </div>
-            <div class="bg-white p-4 rounded shadow text-center">
-                <p class="text-gray-500">Expense</p>
-                <p class="text-red-600 font-bold text-lg">₹<span id="expense">0</span></p>
+
+            <div class="bg-white p-5 rounded shadow text-center">
+                <p class="text-gray-500">Total Expense</p>
+                <h2 class="text-2xl font-bold text-red-600">
+                    ₹<span id="expense">0</span>
+                </h2>
             </div>
-            <div class="bg-white p-4 rounded shadow text-center">
+
+            <div class="bg-white p-5 rounded shadow text-center">
                 <p class="text-gray-500">Balance</p>
-                <p class="font-bold text-lg">₹<span id="balance">0</span></p>
+                <h2 class="text-2xl font-bold text-blue-600">
+                    ₹<span id="balance">0</span>
+                </h2>
             </div>
+
         </div>
 
+        <!-- Form -->
+        <div class="bg-white p-5 rounded shadow mb-5">
 
-        <div class="bg-white p-4 rounded shadow mb-4">
-            <input id="desc" type="text" placeholder="Description" class="w-full border p-2 mb-2 rounded" />
-            <input id="amount" type="number" placeholder="Amount" class="w-full border p-2 mb-2 rounded" />
-            <select id="type" class="w-full border p-2 mb-2 rounded">
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-            </select>
-            <div class="flex gap-2">
-                <button onclick="addOrUpdate()" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Add /
-                    Update</button>
-                <button onclick="resetForm()" class="bg-gray-400 text-white px-4 py-2 rounded w-full">Reset</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <input type="text" id="desc" placeholder="Enter description"
+                    class="border p-2 rounded w-full">
+
+                <input type="number" id="amount" placeholder="Enter amount"
+                    class="border p-2 rounded w-full">
+
+                <select id="type" class="border p-2 rounded w-full">
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+
+                <select id="category" class="border p-2 rounded w-full">
+                    <option value="Salary">Salary</option>
+                    <option value="Food">Food</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Bills">Bills</option>
+                </select>
+
             </div>
+
+            <div class="flex gap-3 mt-4">
+
+                <button onclick="addOrUpdate()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full">
+                    Add / Update
+                </button>
+
+                <button onclick="resetForm()"
+                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded w-full">
+                    Reset
+                </button>
+
+            </div>
+
         </div>
 
-
-        <div class="mb-4 flex gap-4">
-            <label><input type="radio" name="filter" value="all" checked /> All</label>
-            <label><input type="radio" name="filter" value="income" /> Income</label>
-            <label><input type="radio" name="filter" value="expense" /> Expense</label>
+        <!-- Search -->
+        <div class="mb-5">
+            <input type="text" id="search" placeholder="Search transaction..."
+                class="border p-2 rounded w-full"
+                onkeyup="render()">
         </div>
 
+        <!-- Filters -->
+        <div class="flex gap-5 mb-5">
 
-        <div id="list" class="bg-white p-4 rounded shadow"></div>
+            <label>
+                <input type="radio" name="filter" value="all" checked>
+                All
+            </label>
+
+            <label>
+                <input type="radio" name="filter" value="income">
+                Income
+            </label>
+
+            <label>
+                <input type="radio" name="filter" value="expense">
+                Expense
+            </label>
+
+        </div>
+
+        <!-- Transaction List -->
+        <div id="list" class="space-y-3"></div>
+
     </div>
 
     <script>
-        let data = JSON.parse(localStorage.getItem("data")) || [];
-        let editIndex = null;
 
+        let data = JSON.parse(localStorage.getItem("transactions")) || [];
+
+        let editId = null;
+
+        // Save localStorage
         function saveData() {
-            localStorage.setItem("data", JSON.stringify(data));
+            localStorage.setItem("transactions", JSON.stringify(data));
         }
 
+        // Render Transactions
         function render() {
+
             const list = document.getElementById("list");
+
             list.innerHTML = "";
 
-            let filter = document.querySelector('input[name="filter"]:checked').value;
+            let income = 0;
+            let expense = 0;
 
-            let income = 0, expense = 0;
+            const filter =
+                document.querySelector('input[name="filter"]:checked').value;
 
-            data.forEach((item, index) => {
-                if (filter !== "all" && item.type !== filter) return;
+            const search =
+                document.getElementById("search").value.toLowerCase();
+
+            let filteredData = data.filter(item => {
+
+                let matchFilter =
+                    filter === "all" || item.type === filter;
+
+                let matchSearch =
+                    item.desc.toLowerCase().includes(search) ||
+                    item.category.toLowerCase().includes(search);
+
+                return matchFilter && matchSearch;
+            });
+
+            if (filteredData.length === 0) {
+
+                list.innerHTML = `
+                    <div class="bg-white p-5 rounded shadow text-center text-gray-500">
+                        No Transactions Found
+                    </div>
+                `;
+            }
+
+            filteredData.forEach(item => {
+
+                if (item.type === "income") {
+                    income += Number(item.amount);
+                } else {
+                    expense += Number(item.amount);
+                }
 
                 const div = document.createElement("div");
-                div.className = "flex justify-between items-center border-b py-2";
+
+                div.className =
+                    "bg-white p-4 rounded shadow flex justify-between items-center";
 
                 div.innerHTML = `
-          <span class="${item.type === 'income' ? 'text-green-600' : 'text-red-600'}">
-            ${item.desc} - ₹${item.amount}
-          </span>
-          <div class="flex gap-2">
-            <button onclick="editItem(${index})" class="bg-yellow-400 px-2 py-1 rounded">Edit</button>
-            <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
-          </div>
-        `;
+                
+                    <div>
+                        <h2 class="font-bold text-lg">
+                            ${item.desc}
+                        </h2>
+
+                        <p class="text-sm text-gray-500">
+                            ${item.category}
+                        </p>
+
+                        <p class="text-xs text-gray-400">
+                            ${item.date}
+                        </p>
+                    </div>
+
+                    <div class="text-right">
+
+                        <p class="${item.type === "income"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    } font-bold text-lg">
+
+                            ₹${item.amount}
+
+                        </p>
+
+                        <div class="flex gap-2 mt-2">
+
+                            <button
+                                onclick="editItem('${item.id}')"
+                                class="bg-yellow-400 px-3 py-1 rounded">
+                                Edit
+                            </button>
+
+                            <button
+                                onclick="deleteItem('${item.id}')"
+                                class="bg-red-500 text-white px-3 py-1 rounded">
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
 
                 list.appendChild(div);
 
-                if (item.type === "income") income += Number(item.amount);
-                else expense += Number(item.amount);
             });
 
             document.getElementById("income").innerText = income;
+
             document.getElementById("expense").innerText = expense;
-            document.getElementById("balance").innerText = income - expense;
+
+            document.getElementById("balance").innerText =
+                income - expense;
         }
 
+        // Add or Update
         function addOrUpdate() {
-            const desc = document.getElementById("desc").value;
-            const amount = document.getElementById("amount").value;
-            const type = document.getElementById("type").value;
 
-            if (!desc || !amount) return alert("Please fill all fields");
+            const desc =
+                document.getElementById("desc").value.trim();
 
-            if (editIndex !== null) {
-                data[editIndex] = { desc, amount, type };
-                editIndex = null;
+            const amount =
+                document.getElementById("amount").value;
+
+            const type =
+                document.getElementById("type").value;
+
+            const category =
+                document.getElementById("category").value;
+
+            if (!desc || !amount) {
+
+                alert("Please fill all fields");
+
+                return;
+            }
+
+            if (amount <= 0) {
+
+                alert("Amount must be greater than 0");
+
+                return;
+            }
+
+            const transaction = {
+
+                id: editId || Date.now(),
+
+                desc: desc,
+
+                amount: amount,
+
+                type: type,
+
+                category: category,
+
+                date: new Date().toLocaleString()
+            };
+
+            if (editId) {
+
+                data = data.map(item => {
+
+                    if (item.id == editId) {
+                        return transaction;
+                    } else {
+                        return item;
+                    }
+                });
+
+                editId = null;
+
             } else {
-                data.push({ desc, amount, type });
+
+                data.push(transaction);
             }
 
             saveData();
+
             render();
+
             resetForm();
         }
 
-        function editItem(index) {
-            const item = data[index];
-            document.getElementById("desc").value = item.desc;
-            document.getElementById("amount").value = item.amount;
-            document.getElementById("type").value = item.type;
-            editIndex = index;
+        // Edit
+        function editItem(id) {
+
+            const item =
+                data.find(transaction => transaction.id == id);
+
+            document.getElementById("desc").value =
+                item.desc;
+
+            document.getElementById("amount").value =
+                item.amount;
+
+            document.getElementById("type").value =
+                item.type;
+
+            document.getElementById("category").value =
+                item.category;
+
+            editId = id;
         }
 
-        function deleteItem(index) {
-            const confirmDelete = confirm("Are you sure you want to delete this item?");
-            if (!confirmDelete) return;
+        // Delete
+        function deleteItem(id) {
 
-            data.splice(index, 1);
+            const confirmDelete =
+                confirm("Are you sure you want to delete?");
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            data = data.filter(item => item.id != id);
+
             saveData();
+
             render();
         }
 
+        // Reset Form
         function resetForm() {
+
             document.getElementById("desc").value = "";
+
             document.getElementById("amount").value = "";
-            editIndex = null;
+
+            document.getElementById("type").value = "income";
+
+            document.getElementById("category").value = "Salary";
+
+            editId = null;
         }
 
-        document.querySelectorAll('input[name="filter"]').forEach(r => {
-            r.addEventListener("change", render);
-        });
+        // Filter Event
+        document
+            .querySelectorAll('input[name="filter"]')
+            .forEach(radio => {
 
+                radio.addEventListener("change", render);
+            });
+
+        // Initial Render
         render();
+
     </script>
+
 </body>
 
 </html>
