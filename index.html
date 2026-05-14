@@ -13,12 +13,10 @@
 
     <div class="max-w-4xl mx-auto p-4">
 
-        <!-- Heading -->
         <h1 class="text-3xl font-bold text-center mb-5">
             Income Expense Calculator
         </h1>
 
-        <!-- Summary -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
 
             <div class="bg-white p-5 rounded shadow text-center">
@@ -37,23 +35,22 @@
 
             <div class="bg-white p-5 rounded shadow text-center">
                 <p class="text-gray-500">Balance</p>
-                <h2 class="text-2xl font-bold text-blue-600">
+                <h2 id="balanceText" class="text-2xl font-bold text-blue-600">
                     ₹<span id="balance">0</span>
                 </h2>
             </div>
 
         </div>
 
-        <!-- Form -->
         <div class="bg-white p-5 rounded shadow mb-5">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                <input type="text" id="desc" placeholder="Enter description"
-                    class="border p-2 rounded w-full">
+                <input type="text" id="desc" placeholder="Enter description" class="border p-2 rounded w-full"
+                    onkeypress="handleEnter(event)">
 
-                <input type="number" id="amount" placeholder="Enter amount"
-                    class="border p-2 rounded w-full">
+                <input type="number" id="amount" placeholder="Enter amount" class="border p-2 rounded w-full"
+                    onkeypress="handleEnter(event)">
 
                 <select id="type" class="border p-2 rounded w-full">
                     <option value="income">Income</option>
@@ -70,6 +67,8 @@
 
             </div>
 
+            <p id="error" class="text-red-500 text-sm mt-2"></p>
+
             <div class="flex gap-3 mt-4">
 
                 <button onclick="addOrUpdate()"
@@ -77,8 +76,7 @@
                     Add / Update
                 </button>
 
-                <button onclick="resetForm()"
-                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded w-full">
+                <button onclick="resetForm()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded w-full">
                     Reset
                 </button>
 
@@ -86,14 +84,11 @@
 
         </div>
 
-        <!-- Search -->
         <div class="mb-5">
-            <input type="text" id="search" placeholder="Search transaction..."
-                class="border p-2 rounded w-full"
+            <input type="text" id="search" placeholder="Search transaction..." class="border p-2 rounded w-full"
                 onkeyup="render()">
         </div>
 
-        <!-- Filters -->
         <div class="flex gap-5 mb-5">
 
             <label>
@@ -113,9 +108,7 @@
 
         </div>
 
-        <!-- Transaction List -->
         <div id="list" class="space-y-3"></div>
-
     </div>
 
     <script>
@@ -124,20 +117,29 @@
 
         let editId = null;
 
-        // Save localStorage
         function saveData() {
-            localStorage.setItem("transactions", JSON.stringify(data));
+            try {
+                localStorage.setItem("transactions", JSON.stringify(data));
+            } catch (e) {
+                alert("Storage error");
+            }
         }
 
-        // Render Transactions
         function render() {
 
             const list = document.getElementById("list");
-
             list.innerHTML = "";
 
             let income = 0;
             let expense = 0;
+
+            data.forEach(item => {
+                if (item.type === "income") {
+                    income += Number(item.amount);
+                } else {
+                    expense += Number(item.amount);
+                }
+            });
 
             const filter =
                 document.querySelector('input[name="filter"]:checked').value;
@@ -161,18 +163,12 @@
 
                 list.innerHTML = `
                     <div class="bg-white p-5 rounded shadow text-center text-gray-500">
-                        No Transactions Found
+                        📭 No Transactions Found
                     </div>
                 `;
             }
 
             filteredData.forEach(item => {
-
-                if (item.type === "income") {
-                    income += Number(item.amount);
-                } else {
-                    expense += Number(item.amount);
-                }
 
                 const div = document.createElement("div");
 
@@ -230,16 +226,23 @@
             });
 
             document.getElementById("income").innerText = income;
-
             document.getElementById("expense").innerText = expense;
 
-            document.getElementById("balance").innerText =
-                income - expense;
+            const balance = income - expense;
+            document.getElementById("balance").innerText = balance;
+
+            const balanceText = document.getElementById("balanceText");
+
+            if (balance < 0) {
+                balanceText.classList.add("text-red-600");
+                balanceText.classList.remove("text-blue-600");
+            } else {
+                balanceText.classList.add("text-blue-600");
+                balanceText.classList.remove("text-red-600");
+            }
         }
 
-        // Add or Update
         function addOrUpdate() {
-
             const desc =
                 document.getElementById("desc").value.trim();
 
@@ -252,39 +255,37 @@
             const category =
                 document.getElementById("category").value;
 
+            const errorEl = document.getElementById("error");
+
             if (!desc || !amount) {
-
-                alert("Please fill all fields");
-
+                errorEl.innerText = "Please fill all fields";
                 return;
+            } else {
+                errorEl.innerText = "";
             }
 
             if (amount <= 0) {
-
-                alert("Amount must be greater than 0");
-
+                errorEl.innerText = "Amount must be greater than 0";
                 return;
+            }
+
+            if (editId) {
+                const confirmEdit = confirm("Update this transaction?");
+                if (!confirmEdit) return;
             }
 
             const transaction = {
 
                 id: editId || Date.now(),
-
                 desc: desc,
-
                 amount: amount,
-
                 type: type,
-
                 category: category,
-
-                date: new Date().toLocaleString()
+                date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString()
             };
-
             if (editId) {
 
                 data = data.map(item => {
-
                     if (item.id == editId) {
                         return transaction;
                     } else {
@@ -293,80 +294,65 @@
                 });
 
                 editId = null;
+                alert("Updated successfully");
 
             } else {
 
                 data.push(transaction);
+                alert("Added successfully");
             }
 
             saveData();
-
             render();
-
             resetForm();
         }
 
-        // Edit
         function editItem(id) {
 
             const item =
                 data.find(transaction => transaction.id == id);
 
-            document.getElementById("desc").value =
-                item.desc;
-
-            document.getElementById("amount").value =
-                item.amount;
-
-            document.getElementById("type").value =
-                item.type;
-
-            document.getElementById("category").value =
-                item.category;
+            document.getElementById("desc").value = item.desc;
+            document.getElementById("amount").value = item.amount;
+            document.getElementById("type").value = item.type;
+            document.getElementById("category").value = item.category;
 
             editId = id;
         }
-
-        // Delete
         function deleteItem(id) {
 
             const confirmDelete =
                 confirm("Are you sure you want to delete?");
 
-            if (!confirmDelete) {
-                return;
-            }
+            if (!confirmDelete) return;
 
             data = data.filter(item => item.id != id);
 
             saveData();
-
             render();
         }
-
-        // Reset Form
         function resetForm() {
 
             document.getElementById("desc").value = "";
-
             document.getElementById("amount").value = "";
-
             document.getElementById("type").value = "income";
-
             document.getElementById("category").value = "Salary";
+            document.getElementById("error").innerText = "";
 
             editId = null;
         }
+        function handleEnter(e) {
+            if (e.key === "Enter") {
+                addOrUpdate();
+            }
+        }
 
-        // Filter Event
         document
             .querySelectorAll('input[name="filter"]')
             .forEach(radio => {
-
                 radio.addEventListener("change", render);
             });
 
-        // Initial Render
         render();
 
     </script>
