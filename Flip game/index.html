@@ -1,1 +1,236 @@
-hi
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Game</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 25px;
+      background: #FFFAF0;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ffcc70;
+      /* gold */
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    select {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      background: #ffffff;
+      color: #1e3c72;
+    }
+
+    button {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      background: #ff6b6b;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ff4d4d;
+    }
+
+    .score {
+      background: #00c9a7;
+      padding: 6px 12px;
+      border-radius: 20px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .game-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-board {
+      display: grid;
+      gap: 15px;
+    }
+
+    .card {
+      width: 100%;
+      aspect-ratio: 1/1;
+      border-radius: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      cursor: pointer;
+      background: #111;
+      color: white;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: scale(1.08);
+    }
+
+    .flipped {
+      background: #4caf50;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header-bar">
+    <div class="title">🧠 Memory Game</div>
+
+    <div class="controls">
+      <select id="levelSelect" onchange="restartGame()">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+
+      <button onclick="restartGame()">Restart</button>
+
+      <span id="score" class="score">Score: 0</span>
+    </div>
+  </header>
+
+  <div class="game-container">
+    <div id="board" class="game-board"></div>
+  </div>
+
+  <script>
+    const board = document.getElementById("board");
+    const levelSelect = document.getElementById("levelSelect");
+
+    let flippedCards = [];
+    let matchedCards = [];
+    let score = 0;
+    let hasOddCard = false;
+
+    const fruits = [
+      "🍎", "🍌", "🍇", "🍒", "🍊", "🍉", "🍍", "🥝",
+      "🍓", "🥭", "🍐", "🍑", "🍈", "🥥", "🫐", "🍅",
+      "🍋", "🍏"
+    ];
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function updateScore() {
+      document.getElementById("score").textContent = "Score: " + score;
+    }
+
+    function handleFlip() {
+      if (flippedCards.length === 2 || this.classList.contains("flipped")) return;
+
+      this.classList.add("flipped");
+      this.textContent = this.dataset.symbol;
+
+      flippedCards.push(this);
+
+      if (flippedCards.length === 2) {
+        const [a, b] = flippedCards;
+
+        if (a.dataset.symbol === b.dataset.symbol && a.dataset.symbol !== "❓") {
+          score++;
+          updateScore();
+          matchedCards.push(a, b);
+          flippedCards = [];
+
+          const total = document.querySelectorAll(".card").length - (hasOddCard ? 1 : 0);
+
+          if (matchedCards.length === total) {
+            setTimeout(() => alert("🎉 You Won!"), 300);
+          }
+
+        } else {
+          setTimeout(() => {
+            a.classList.remove("flipped");
+            b.classList.remove("flipped");
+            a.textContent = "";
+            b.textContent = "";
+            flippedCards = [];
+          }, 500);
+        }
+      }
+    }
+
+    function createBoard() {
+      board.innerHTML = "";
+      flippedCards = [];
+      matchedCards = [];
+
+      const level = levelSelect.value;
+
+      let config;
+
+      if (level === "easy") {
+        config = { cols: 3, pairs: 4, odd: true, size: 120 };
+      } else if (level === "medium") {
+        config = { cols: 4, pairs: 8, odd: false, size: 100 };
+      } else {
+        config = { cols: 6, pairs: 18, odd: false, size: 80 };
+      }
+
+      hasOddCard = config.odd;
+
+      board.style.gridTemplateColumns = `repeat(${config.cols}, ${config.size}px)`;
+
+      let cards = [...fruits.slice(0, config.pairs), ...fruits.slice(0, config.pairs)];
+
+      if (config.odd) cards.push("❓");
+
+      cards = shuffle(cards);
+
+      cards.forEach(sym => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.symbol = sym;
+        card.onclick = handleFlip;
+        board.appendChild(card);
+      });
+
+      score = 0;
+      updateScore();
+    }
+
+    function restartGame() {
+      createBoard();
+    }
+
+    createBoard();
+  </script>
+
+</body>
+
+</html>
